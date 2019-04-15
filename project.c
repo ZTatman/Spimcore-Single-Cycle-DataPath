@@ -63,17 +63,16 @@ void instruction_partition(unsigned instruction, unsigned *op, unsigned *r1,unsi
 	// r3 = instruction[15-11]; 
 	// funct = instruction[5-0];
 	// offset = instruction[15-0];
-	// jsec = instruction[35-0];
+	// jsec = instruction[25-0];
 
 	*op = (instruction & 0xFC000000) >> 26;
 	*r1 = (instruction & 0x3E00000) >> 21;
 	*r2 = (instruction & 0x1F0000) >> 16;
-	*r3 = (instruction & 0xF800) >> 11
-	*funct = (instruction & 0x3F) << 26;
-	*offset = (instruction & 0x7FFF) << 16;
-	// jsec = 
+	*r3 = (instruction & 0xF800) >> 11;
+	*funct = (instruction & 0x3F);
+	*offset = (instruction & 0xFFFF);
+	*jsec = (instruction & 0x3FFFFFF);
 }
-
 
 
 /* instruction decode */
@@ -81,6 +80,153 @@ void instruction_partition(unsigned instruction, unsigned *op, unsigned *r1,unsi
 int instruction_decode(unsigned op,struct_controls *controls)
 {
 
+// Reference to stuct_controls control signals
+// =========================================== 
+	/*
+	RegDst;
+	Jump;
+	Branch;
+	MemRead;
+	MemtoReg;
+	ALUOp;
+	MemWrite;
+	ALUSrc;
+	RegWrite;
+	*/
+
+
+	// R-type Inst.
+	if (op == 0) // ( add, sub, or, and ) instructions
+	{
+		
+		struct_controls->RegDst = 1;
+		struct_controls->ALUOp = 7; // 111 = r-type instruction operation
+		struct_controls->RegWrite = 1;
+		struct_controls->ALUSrc = 0;
+		struct_controls->MemWrite = 0;
+		struct_controls->MemRead = 0;
+		struct_controls->MemtoReg = 0;
+		struct_controls->Jump = 0;
+		struct_controls->Branch = 0;
+
+	}
+	// Addi
+	else if (op == 16)
+	{
+		struct_controls->RegDst = 0;
+		struct_controls->ALUOp = 0; // 000 = add
+		struct_controls->RegWrite = 1;
+		struct_controls->ALUSrc = 1;
+		struct_controls->MemWrite = 0;
+		struct_controls->MemRead = 0;
+		struct_controls->MemtoReg = 0;
+		struct_controls->Jump = 0;
+		struct_controls->Branch = 0;
+	}
+	// Load Word
+	else if (op == 35)
+	{
+		struct_controls->RegDst = 0;
+		struct_controls->ALUOp = 0; // 000 = add
+		struct_controls->RegWrite = 1;
+		struct_controls->ALUSrc = 1;
+		struct_controls->MemWrite = 0;
+		struct_controls->MemRead = 1;
+		struct_controls->MemtoReg = 1;
+		struct_controls->Jump = 0;
+		struct_controls->Branch = 0;
+	}
+	// Load Upper immediate 
+	else if ( op == 15)
+	{
+		struct_controls->RegDst = 2;
+		struct_controls->ALUOp = 6; // 110 = shift left extended_value by 16 bits
+		struct_controls->RegWrite = 0;
+		struct_controls->ALUSrc = 1;
+		struct_controls->MemWrite = 1;
+		struct_controls->MemRead = 0;
+		struct_controls->MemtoReg = 2;
+		struct_controls->Jump = 0;
+		struct_controls->Branch = 0;
+	}
+	// Store Word
+	else if (op == 43)
+	{
+		struct_controls->RegDst = 2;
+		struct_controls->ALUOp = 0; // 000 = add
+		struct_controls->RegWrite = 0;
+		struct_controls->ALUSrc = 1;
+		struct_controls->MemWrite = 1;
+		struct_controls->MemRead = 0;
+		struct_controls->MemtoReg = 2;
+		struct_controls->Jump = 0;
+		struct_controls->Branch = 0;
+	}
+	// Branch On Equal
+	else if (op == 4)
+	{
+		struct_controls->RegDst = 2;
+		struct_controls->ALUOp = 1; // 001 = subtract
+		struct_controls->RegWrite = 0;
+		struct_controls->ALUSrc = 0;
+		struct_controls->MemWrite = 0;
+		struct_controls->MemRead = 0;
+		struct_controls->MemtoReg = 2;
+		struct_controls->Jump = 0;
+		struct_controls->Branch = 1;
+	}
+	// slt
+	else if (op == )
+	{
+		struct_controls->RegDst = 0;
+		struct_controls->ALUOp = 2; // 010 = slt & slt immediate
+		struct_controls->RegWrite = 1;
+		struct_controls->ALUSrc = 1;
+		struct_controls->MemWrite = 0;
+		struct_controls->MemRead = 0;
+		struct_controls->MemtoReg = 0;
+		struct_controls->Jump = 0;
+		struct_controls->Branch = 0;
+	}
+	// slt immediate
+	else if (op == 10)
+	{
+		struct_controls->RegDst = 0;
+		struct_controls->ALUOp = 2; // 010 = slt & slt immediate
+		struct_controls->RegWrite = 1;
+		struct_controls->ALUSrc = 1;
+		struct_controls->MemWrite = 0;
+		struct_controls->MemRead = 0;
+		struct_controls->MemtoReg = 0;
+		struct_controls->Jump = 0;
+		struct_controls->Branch = 0;
+	}
+	// stl immediate unsigned
+	else if (op == 11)
+	{
+		struct_controls->RegDst = 0;
+		struct_controls->ALUOp = 3; // 011 = slt immediate unsigned
+		struct_controls->RegWrite = 1;
+		struct_controls->ALUSrc = 1;
+		struct_controls->MemWrite = 0;
+		struct_controls->MemRead = 0;
+		struct_controls->MemtoReg = 0;
+		struct_controls->Jump = 0;
+		struct_controls->Branch = 0;
+	}
+	// Jump
+	else if (op == 2)
+	{
+		struct_controls->RegDst = 2;
+		struct_controls->ALUOp = 0; // 0 = "Do not care"
+		struct_controls->RegWrite = 0;
+		struct_controls->ALUSrc = 2;
+		struct_controls->MemWrite = 0;
+		struct_controls->MemRead = 0;
+		struct_controls->MemtoReg = 0;
+		struct_controls->Jump = 1;
+		struct_controls->Branch = 0;
+	}
 }
 
 /* Read Register */
