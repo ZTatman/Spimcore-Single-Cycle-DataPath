@@ -5,35 +5,70 @@
 /* 10 Points */
 void ALU(unsigned A,unsigned B,char ALUControl,unsigned *ALUresult,char *Zero)
 {
-	// Instructions R, M, S, C, H, X.
-
-	// TO-DO: ALU Switch statement
-
-	// ALUControl Switch statement
-	switch(ALUControl) {
-
-		// Print Register Contents
-		case 'R':
-
-		// Show Memory Contents
-		case 'M':
-
-		// Step Forward 1 Instruction
-		case 'S':
-
-		// Continue All Instructions Until Halt
-		case 'C':
-
-		// Check If Program Is Halted
-		case 'H':
-
-		// Quit
-		case 'X':
-
-		// Instructions do not match, Halt Occurs
-		default: 
-			return 1;
+	int Control = (int) ALUControl;
+	// addition
+	if (Control == 0)
+	{
+		*ALUresult = A + B;
 	}
+
+	// subtraction
+	else if (Control == 1)
+	{
+		*ALUresult = A - B;
+	}
+
+	// set less than unsigned
+	else if (Control == 2)
+	{
+		if ((if ((signed)A < (signed)B)
+		{
+			*ALUresult = 1;
+		}
+		else
+		{
+			*ALUresult = 0;
+		}
+	}
+
+	// set less than unsigned
+	else if (Control == 3)
+	{
+		if (A < B)
+			*ALUresult = 1;
+		else
+			*ALUresult = 0;
+	}
+
+	// bitwise and
+	else if (Control == 4)
+	{
+		*ALUresult = A & B;
+	}
+
+	// bitwise or
+	else if (Control == 5)
+	{
+		*ALUresult = A | B;
+	}
+
+	// shift left by 16 bits
+	else if (Control == 6)
+	{
+		B << 16;
+	}
+
+	// bitwise not
+	else if (Control == 7)
+	{
+		*ALUresult = ~A;
+	}
+
+	// zero stuff
+	if (!*ALUresult)
+		*Zero = 1;
+	else
+		*Zero = 0;
 }
 
 /* instruction fetch */
@@ -60,7 +95,7 @@ void instruction_partition(unsigned instruction, unsigned *op, unsigned *r1,unsi
 	// op = instruction[31-26];
 	// r1 = instruction[25-21];
 	// r2 = instruction[20-16];
-	// r3 = instruction[15-11]; 
+	// r3 = instruction[15-11];
 	// funct = instruction[5-0];
 	// offset = instruction[15-0];
 	// jsec = instruction[25-0];
@@ -81,7 +116,7 @@ int instruction_decode(unsigned op,struct_controls *controls)
 {
 
 // Reference to stuct_controls control signals
-// =========================================== 
+// ===========================================
 	/*
 	RegDst;
 	Jump;
@@ -98,7 +133,7 @@ int instruction_decode(unsigned op,struct_controls *controls)
 	// R-type Inst.
 	if (op == 0) // ( add, sub, or, and ) instructions
 	{
-		
+
 		struct_controls->RegDst = 1;
 		struct_controls->ALUOp = 7; // 111 = r-type instruction operation
 		struct_controls->RegWrite = 1;
@@ -111,7 +146,7 @@ int instruction_decode(unsigned op,struct_controls *controls)
 
 	}
 	// Addi
-	else if (op == 16)
+	else if (op == 8)
 	{
 		struct_controls->RegDst = 0;
 		struct_controls->ALUOp = 0; // 000 = add
@@ -136,7 +171,7 @@ int instruction_decode(unsigned op,struct_controls *controls)
 		struct_controls->Jump = 0;
 		struct_controls->Branch = 0;
 	}
-	// Load Upper immediate 
+	// Load Upper immediate
 	else if ( op == 15)
 	{
 		struct_controls->RegDst = 2;
@@ -174,19 +209,6 @@ int instruction_decode(unsigned op,struct_controls *controls)
 		struct_controls->MemtoReg = 2;
 		struct_controls->Jump = 0;
 		struct_controls->Branch = 1;
-	}
-	// slt
-	else if (op == )
-	{
-		struct_controls->RegDst = 0;
-		struct_controls->ALUOp = 2; // 010 = slt & slt immediate
-		struct_controls->RegWrite = 1;
-		struct_controls->ALUSrc = 1;
-		struct_controls->MemWrite = 0;
-		struct_controls->MemRead = 0;
-		struct_controls->MemtoReg = 0;
-		struct_controls->Jump = 0;
-		struct_controls->Branch = 0;
 	}
 	// slt immediate
 	else if (op == 10)
@@ -233,7 +255,8 @@ int instruction_decode(unsigned op,struct_controls *controls)
 /* 5 Points */
 void read_register(unsigned r1,unsigned r2,unsigned *Reg,unsigned *data1,unsigned *data2)
 {
-
+	*data1 = r1;
+	*data2 = r2;
 }
 
 
@@ -241,7 +264,13 @@ void read_register(unsigned r1,unsigned r2,unsigned *Reg,unsigned *data1,unsigne
 /* 10 Points */
 void sign_extend(unsigned offset,unsigned *extended_value)
 {
-
+	if (offset >> 15)
+	{
+		int n = -1 << 16;
+		offset |= n;
+	}
+	*extended_value = offset;
+	return extended_value;
 }
 
 /* ALU operations */
@@ -249,6 +278,49 @@ void sign_extend(unsigned offset,unsigned *extended_value)
 int ALU_operations(unsigned data1,unsigned data2,unsigned extended_value,unsigned funct,char ALUOp,char ALUSrc,unsigned *ALUresult,char *Zero)
 {
 
+	//Check which data we are opperating on by ALU src
+	if(ALUSrc)
+		data2 = extended_value;
+
+	if (ALUOp == 7)
+	{
+	// R-types Instructions
+		switch(funct)
+		{
+			case 6:
+				ALUOp = 6;
+				break;
+			case 32:
+				ALUOp = 0;
+				break;
+			case 34:
+				ALUOp = 1;
+				break;
+			case 36:
+				ALUOp = 4;
+				break;
+			case 37:
+				ALUOp = 5;
+				break;
+			case 39:
+				ALUOp = 7;
+				break;
+			case 42:
+				ALUOp = 2;
+				break;
+			case 43:
+				ALUOp = 3;
+				break;
+
+			// halt
+			default:
+				return 1;
+			}
+		ALU(data1,data2,ALUOp,ALUresult,Zero);
+	}
+	else
+		ALU(data1,data2,ALUOp,ALUresult,Zero);
+	return 0;
 }
 
 /* Read / Write Memory */
@@ -256,6 +328,22 @@ int ALU_operations(unsigned data1,unsigned data2,unsigned extended_value,unsigne
 int rw_memory(unsigned ALUresult,unsigned data2,char MemWrite,char MemRead,unsigned *memdata,unsigned *Mem)
 {
 
+	// reading from memory
+	if (MemRead == 1)
+		if (!(ALUresult % 4))
+			*memdata = Mem[ALUresult >> 2];
+		// halt
+		else
+			return 1;
+
+	// writting to memory
+	if (MemWrite == 1)
+		if (!(ALUresult % 4))
+			Mem[ALUresult >> 2] = data2;
+		// halt
+		else
+			return 1;
+	return 0;
 }
 
 
@@ -263,13 +351,24 @@ int rw_memory(unsigned ALUresult,unsigned data2,char MemWrite,char MemRead,unsig
 /* 10 Points */
 void write_register(unsigned r2,unsigned r3,unsigned memdata,unsigned ALUresult,char RegWrite,char RegDst,char MemtoReg,unsigned *Reg)
 {
-
+	if (RegWrite)
+		if (MemtoReg && RegDst)
+			Reg[r3] = memdata;
+		else if (MemtoReg && !RegDst)
+			Reg[r2] = memdata;
+		else if (!MemtoReg && RegDst)
+			Reg[r3] = ALUresult;
+		else if (!MemtoReg && !RegDst)
+			Reg[r2] = ALUresult;
 }
 
 /* PC update */
 /* 10 Points */
 void PC_update(unsigned jsec,unsigned extended_value,char Branch,char Jump,char Zero,unsigned *PC)
 {
-
+	*PC += 4;
+	if (Jump)
+		*PC = (jsec << 2) | (*PC & 0xf0000000));
+	if (Zero && Branch)
+		*PC += extended_value << 2;
 }
-
