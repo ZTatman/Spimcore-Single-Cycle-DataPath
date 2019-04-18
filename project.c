@@ -1,8 +1,6 @@
 #include "spimcore.h"
 
 
-/* ALU */
-/* 10 Points */
 void ALU(unsigned A,unsigned B,char ALUControl,unsigned *ALUresult,char *Zero)
 {
 	int Control = (int) ALUControl;
@@ -11,24 +9,19 @@ void ALU(unsigned A,unsigned B,char ALUControl,unsigned *ALUresult,char *Zero)
 	{
 		*ALUresult = A + B;
 	}
-
 	// subtraction
 	else if (Control == 1)
 	{
 		*ALUresult = A - B;
 	}
 
-	// set less than unsigned
+	// set less than 
 	else if (Control == 2)
 	{
-		if ((if ((signed)A < (signed)B)
-		{
+		if ((int)A < (int)B)
 			*ALUresult = 1;
-		}
 		else
-		{
 			*ALUresult = 0;
-		}
 	}
 
 	// set less than unsigned
@@ -55,7 +48,7 @@ void ALU(unsigned A,unsigned B,char ALUControl,unsigned *ALUresult,char *Zero)
 	// shift left by 16 bits
 	else if (Control == 6)
 	{
-		B << 16;
+		*ALUresult = B << 16;
 	}
 
 	// bitwise not
@@ -64,22 +57,17 @@ void ALU(unsigned A,unsigned B,char ALUControl,unsigned *ALUresult,char *Zero)
 		*ALUresult = ~A;
 	}
 
-	// zero stuff
-	if (!*ALUresult)
-		*Zero = 1;
-	else
-		*Zero = 0;
+	// Set to 1 if result is 0.
+	*Zero = (*ALUresult == 0);
 }
 
-/* instruction fetch */
-/* 10 Points */
+
 int instruction_fetch(unsigned PC,unsigned *Mem,unsigned *instruction)
 {
 	// Word-aligned means that PC is a multiple of 4.
-	// Also check if PC goes beyond address 0xFFF, (65535)_10.
-	if (PC % 4 == 0 && PC < 65535 )
+	if (PC % 4 == 0)
 	{
-		instruction = Mem[PC >> 2];
+		*instruction = Mem[PC >> 2];
 		return 0;
 	}
 
@@ -88,8 +76,6 @@ int instruction_fetch(unsigned PC,unsigned *Mem,unsigned *instruction)
 }
 
 
-/* instruction partition */
-/* 10 Points */
 void instruction_partition(unsigned instruction, unsigned *op, unsigned *r1,unsigned *r2, unsigned *r3, unsigned *funct, unsigned *offset, unsigned *jsec)
 {
 	// op = instruction[31-26];
@@ -104,14 +90,12 @@ void instruction_partition(unsigned instruction, unsigned *op, unsigned *r1,unsi
 	*r1 = (instruction & 0x3E00000) >> 21;
 	*r2 = (instruction & 0x1F0000) >> 16;
 	*r3 = (instruction & 0xF800) >> 11;
-	*funct = (instruction & 0x3F);
-	*offset = (instruction & 0xFFFF);
-	*jsec = (instruction & 0x3FFFFFF);
+	*funct = instruction & 0x3F;
+	*offset = instruction & 0xFFFF;
+	*jsec = instruction & 0x3FFFFFF;
 }
 
 
-/* instruction decode */
-/* 15 Points */
 int instruction_decode(unsigned op,struct_controls *controls)
 {
 
@@ -134,134 +118,143 @@ int instruction_decode(unsigned op,struct_controls *controls)
 	if (op == 0) // ( add, sub, or, and ) instructions
 	{
 
-		struct_controls->RegDst = 1;
-		struct_controls->ALUOp = 7; // 111 = r-type instruction operation
-		struct_controls->RegWrite = 1;
-		struct_controls->ALUSrc = 0;
-		struct_controls->MemWrite = 0;
-		struct_controls->MemRead = 0;
-		struct_controls->MemtoReg = 0;
-		struct_controls->Jump = 0;
-		struct_controls->Branch = 0;
+		controls->RegDst = 1;
+		controls->ALUOp = 7; // 111 = r-type instruction operation
+		controls->RegWrite = 1;
+		controls->ALUSrc = 0;
+		controls->MemWrite = 0;
+		controls->MemRead = 0;
+		controls->MemtoReg = 0;
+		controls->Jump = 0;
+		controls->Branch = 0;
+		return 0;
 
 	}
 	// Addi
 	else if (op == 8)
 	{
-		struct_controls->RegDst = 0;
-		struct_controls->ALUOp = 0; // 000 = add
-		struct_controls->RegWrite = 1;
-		struct_controls->ALUSrc = 1;
-		struct_controls->MemWrite = 0;
-		struct_controls->MemRead = 0;
-		struct_controls->MemtoReg = 0;
-		struct_controls->Jump = 0;
-		struct_controls->Branch = 0;
+		controls->RegDst = 0;
+		controls->ALUOp = 0; // 000 = add
+		controls->RegWrite = 1;
+		controls->ALUSrc = 1;
+		controls->MemWrite = 0;
+		controls->MemRead = 0;
+		controls->MemtoReg = 0;
+		controls->Jump = 0;
+		controls->Branch = 0;
+		return 0;
 	}
 	// Load Word
 	else if (op == 35)
 	{
-		struct_controls->RegDst = 0;
-		struct_controls->ALUOp = 0; // 000 = add
-		struct_controls->RegWrite = 1;
-		struct_controls->ALUSrc = 1;
-		struct_controls->MemWrite = 0;
-		struct_controls->MemRead = 1;
-		struct_controls->MemtoReg = 1;
-		struct_controls->Jump = 0;
-		struct_controls->Branch = 0;
+		controls->RegDst = 0;
+		controls->ALUOp = 0; // 000 = add
+		controls->RegWrite = 1;
+		controls->ALUSrc = 1;
+		controls->MemWrite = 0;
+		controls->MemRead = 1;
+		controls->MemtoReg = 1;
+		controls->Jump = 0;
+		controls->Branch = 0;
+		return 0;
 	}
 	// Load Upper immediate
-	else if ( op == 15)
+	else if (op == 15)
 	{
-		struct_controls->RegDst = 2;
-		struct_controls->ALUOp = 6; // 110 = shift left extended_value by 16 bits
-		struct_controls->RegWrite = 0;
-		struct_controls->ALUSrc = 1;
-		struct_controls->MemWrite = 1;
-		struct_controls->MemRead = 0;
-		struct_controls->MemtoReg = 2;
-		struct_controls->Jump = 0;
-		struct_controls->Branch = 0;
+		controls->RegDst = 0;
+		controls->ALUOp = 6; // 110 = shift left extended_value by 16 bits
+		controls->RegWrite = 1;
+		controls->ALUSrc = 1;
+		controls->MemWrite = 0;
+		controls->MemRead = 0;
+		controls->MemtoReg = 0;
+		controls->Jump = 0;
+		controls->Branch = 0;
+		return 0;
 	}
 	// Store Word
 	else if (op == 43)
 	{
-		struct_controls->RegDst = 2;
-		struct_controls->ALUOp = 0; // 000 = add
-		struct_controls->RegWrite = 0;
-		struct_controls->ALUSrc = 1;
-		struct_controls->MemWrite = 1;
-		struct_controls->MemRead = 0;
-		struct_controls->MemtoReg = 2;
-		struct_controls->Jump = 0;
-		struct_controls->Branch = 0;
+		controls->RegDst = 0;
+		controls->ALUOp = 0; // 000 = add
+		controls->RegWrite = 0;
+		controls->ALUSrc = 1;
+		controls->MemWrite = 1;
+		controls->MemRead = 0;
+		controls->MemtoReg = 0;
+		controls->Jump = 0;
+		controls->Branch = 0;
+		return 0;
 	}
 	// Branch On Equal
 	else if (op == 4)
 	{
-		struct_controls->RegDst = 2;
-		struct_controls->ALUOp = 1; // 001 = subtract
-		struct_controls->RegWrite = 0;
-		struct_controls->ALUSrc = 0;
-		struct_controls->MemWrite = 0;
-		struct_controls->MemRead = 0;
-		struct_controls->MemtoReg = 2;
-		struct_controls->Jump = 0;
-		struct_controls->Branch = 1;
+		controls->RegDst = 2;
+		controls->ALUOp = 1; // 001 = subtract
+		controls->RegWrite = 0;
+		controls->ALUSrc = 0;
+		controls->MemWrite = 0;
+		controls->MemRead = 0;
+		controls->MemtoReg = 2;
+		controls->Jump = 0;
+		controls->Branch = 1;
+		return 0;
 	}
 	// slt immediate
 	else if (op == 10)
 	{
-		struct_controls->RegDst = 0;
-		struct_controls->ALUOp = 2; // 010 = slt & slt immediate
-		struct_controls->RegWrite = 1;
-		struct_controls->ALUSrc = 1;
-		struct_controls->MemWrite = 0;
-		struct_controls->MemRead = 0;
-		struct_controls->MemtoReg = 0;
-		struct_controls->Jump = 0;
-		struct_controls->Branch = 0;
+		controls->RegDst = 0;
+		controls->ALUOp = 2; // 010 = slt & slt immediate
+		controls->RegWrite = 1;
+		controls->ALUSrc = 1;
+		controls->MemWrite = 0;
+		controls->MemRead = 0;
+		controls->MemtoReg = 0;
+		controls->Jump = 0;
+		controls->Branch = 0;
+		return 0;
 	}
 	// stl immediate unsigned
 	else if (op == 11)
 	{
-		struct_controls->RegDst = 0;
-		struct_controls->ALUOp = 3; // 011 = slt immediate unsigned
-		struct_controls->RegWrite = 1;
-		struct_controls->ALUSrc = 1;
-		struct_controls->MemWrite = 0;
-		struct_controls->MemRead = 0;
-		struct_controls->MemtoReg = 0;
-		struct_controls->Jump = 0;
-		struct_controls->Branch = 0;
+		controls->RegDst = 0;
+		controls->ALUOp = 3; // 011 = slt immediate unsigned
+		controls->RegWrite = 1;
+		controls->ALUSrc = 1;
+		controls->MemWrite = 0;
+		controls->MemRead = 0;
+		controls->MemtoReg = 0;
+		controls->Jump = 0;
+		controls->Branch = 0;
+		return 0;
 	}
 	// Jump
 	else if (op == 2)
 	{
-		struct_controls->RegDst = 2;
-		struct_controls->ALUOp = 0; // 0 = "Do not care"
-		struct_controls->RegWrite = 0;
-		struct_controls->ALUSrc = 2;
-		struct_controls->MemWrite = 0;
-		struct_controls->MemRead = 0;
-		struct_controls->MemtoReg = 0;
-		struct_controls->Jump = 1;
-		struct_controls->Branch = 0;
+		controls->RegDst = 2;
+		controls->ALUOp = 0; // 0 = "Do not care"
+		controls->RegWrite = 0;
+		controls->ALUSrc = 2;
+		controls->MemWrite = 0;
+		controls->MemRead = 0;
+		controls->MemtoReg = 2;
+		controls->Jump = 1;
+		controls->Branch = 2;
+		return 0;
 	}
+	
+	return 1;
 }
 
-/* Read Register */
-/* 5 Points */
+
 void read_register(unsigned r1,unsigned r2,unsigned *Reg,unsigned *data1,unsigned *data2)
 {
-	*data1 = r1;
-	*data2 = r2;
+	*data1 = Reg[r1];
+	*data2 = Reg[r2];
 }
 
 
-/* Sign Extend */
-/* 10 Points */
+
 void sign_extend(unsigned offset,unsigned *extended_value)
 {
 	if (offset >> 15)
@@ -270,75 +263,81 @@ void sign_extend(unsigned offset,unsigned *extended_value)
 		offset |= n;
 	}
 	*extended_value = offset;
-	return extended_value;
 }
 
-/* ALU operations */
-/* 10 Points */
+
 int ALU_operations(unsigned data1,unsigned data2,unsigned extended_value,unsigned funct,char ALUOp,char ALUSrc,unsigned *ALUresult,char *Zero)
 {
 
+	char control = ALUOp;
+
 	//Check which data we are opperating on by ALU src
 	if(ALUSrc)
+	{
 		data2 = extended_value;
-
-	if (ALUOp == 7)
+	}
+	
+	if (control == 0 || control == 1 || control == 2 || control == 3 || control == 4 ||
+				control == 5 || control == 6)
+	{
+		ALU(data1,data2,control,ALUresult,Zero);
+		return 0;
+	}
+	
+	if (control == 7)
 	{
 	// R-types Instructions
 		switch(funct)
 		{
 			case 6:
-				ALUOp = 6;
+				control = 6;
 				break;
 			case 32:
-				ALUOp = 0;
+				control = 0;
 				break;
 			case 34:
-				ALUOp = 1;
+				control = 1;
 				break;
 			case 36:
-				ALUOp = 4;
+				control = 4;
 				break;
 			case 37:
-				ALUOp = 5;
+				control = 5;
 				break;
-			case 39:
-				ALUOp = 7;
+			// case 39:
+			// 	control = 7;
 				break;
 			case 42:
-				ALUOp = 2;
+				control = 2;
 				break;
 			case 43:
-				ALUOp = 3;
+				control = 3;
 				break;
 
 			// halt
 			default:
 				return 1;
-			}
-		ALU(data1,data2,ALUOp,ALUresult,Zero);
+		}
+		ALU(data1,data2,control,ALUresult,Zero);
+		return 0;
 	}
-	else
-		ALU(data1,data2,ALUOp,ALUresult,Zero);
-	return 0;
+	return 1;
 }
 
-/* Read / Write Memory */
-/* 10 Points */
 int rw_memory(unsigned ALUresult,unsigned data2,char MemWrite,char MemRead,unsigned *memdata,unsigned *Mem)
 {
 
 	// reading from memory
-	if (MemRead == 1)
-		if (!(ALUresult % 4))
+	if (MemRead)
+		if ((ALUresult % 4) == 0)
 			*memdata = Mem[ALUresult >> 2];
 		// halt
 		else
 			return 1;
 
 	// writting to memory
-	if (MemWrite == 1)
-		if (!(ALUresult % 4))
+	if (MemWrite)
+		if ((ALUresult % 4) == 0)
 			Mem[ALUresult >> 2] = data2;
 		// halt
 		else
@@ -347,28 +346,25 @@ int rw_memory(unsigned ALUresult,unsigned data2,char MemWrite,char MemRead,unsig
 }
 
 
-/* Write Register */
-/* 10 Points */
 void write_register(unsigned r2,unsigned r3,unsigned memdata,unsigned ALUresult,char RegWrite,char RegDst,char MemtoReg,unsigned *Reg)
 {
 	if (RegWrite)
-		if (MemtoReg && RegDst)
-			Reg[r3] = memdata;
-		else if (MemtoReg && !RegDst)
-			Reg[r2] = memdata;
-		else if (!MemtoReg && RegDst)
-			Reg[r3] = ALUresult;
-		else if (!MemtoReg && !RegDst)
-			Reg[r2] = ALUresult;
+		if (!MemtoReg)
+			if (RegDst)
+				Reg[r3] = ALUresult;
+			else
+				Reg[r2] = ALUresult;
+	
+		else if (MemtoReg)
+			Reg[r2] = memdata;	
 }
 
-/* PC update */
-/* 10 Points */
+
 void PC_update(unsigned jsec,unsigned extended_value,char Branch,char Jump,char Zero,unsigned *PC)
 {
 	*PC += 4;
-	if (Jump)
-		*PC = (jsec << 2) | (*PC & 0xf0000000));
-	if (Zero && Branch)
-		*PC += extended_value << 2;
+	if (Jump == 1)
+		*PC = (jsec << 2) | (*PC & 0xF0000000);
+	if (Zero == 1 && Branch == 1)
+		*PC = *PC + (extended_value << 2);
 }
